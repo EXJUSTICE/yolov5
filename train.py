@@ -87,9 +87,20 @@ def train(hyp, opt, device, tb_writer=None):
         with torch_distributed_zero_first(rank):
             weights = attempt_download(weights)  # download if not found locally
         ckpt = torch.load(weights, map_location=device)  # load checkpoint
+        # if loading weights from default 3chan model, cfg must be specified
         model = Model(opt.cfg or ckpt['model'].yaml, ch=4, nc=nc, anchors=hyp.get('anchors')).to(device)  # create
         exclude = ['anchor'] if (opt.cfg or hyp.get('anchors')) and not opt.resume else []  # exclude keys
         state_dict = ckpt['model'].float().state_dict()  # to FP32
+        
+        model_state_dict = model.state_dict()
+        first_conv = 'model.0.conv.conv.weight'
+        if model_state_dict[first_conv].shape != state_dict[first_conv].shape:
+            # loading 3 channel weights to 4 channel model - copy first conv weights using repeat method
+            c_per_im_c = model_state_dict[first_conv].shape[1] // 4
+            model_state_dict[first_conv][:,:3*c_per_im_c,:,:] = state_dict[first_conv].clone()
+            model_state_dict[first_conv][:,3*c_per_im_c:,:,:] = state_dict[first_conv][:,:c_per_im_c,:,:].clone()
+            state_dict[first_conv] = model_state_dict[first_conv].clone()
+        
         state_dict = intersect_dicts(state_dict, model.state_dict(), exclude=exclude)  # intersect
         model.load_state_dict(state_dict, strict=False)  # load
         logger.info('Transferred %g/%g items from %s' % (len(state_dict), len(model.state_dict()), weights))  # report
@@ -330,7 +341,7 @@ def train(hyp, opt, device, tb_writer=None):
 
                 # Plot
                 if plots and ni < 3:
-                    f = save_dir / f'train_batch{ni}.jpg'  # filename
+                    f = save_dir / f'train_batch{ni}.png'  # filename
                     Thread(target=plot_images, args=(imgs, targets, paths, f), daemon=True).start()
                     if tb_writer and ni == 0:
                         with warnings.catch_warnings():
@@ -338,7 +349,7 @@ def train(hyp, opt, device, tb_writer=None):
                             tb_writer.add_graph(torch.jit.trace(de_parallel(model), imgs[0:1], strict=False), [])
                 elif plots and ni == 10 and wandb_logger.wandb:
                     wandb_logger.log({'Mosaics': [wandb_logger.wandb.Image(str(x), caption=x.name) for x in
-                                                  save_dir.glob('train*.jpg') if x.exists()]})
+                                                  save_dir.glob('train*.png') if x.exists()]})
 
             # end batch ------------------------------------------------------------------------------------------------
         # end epoch ----------------------------------------------------------------------------------------------------
