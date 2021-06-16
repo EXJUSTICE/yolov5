@@ -90,7 +90,7 @@ def test(data,
     # Dataloader
     if not training:
         if device.type != 'cpu':
-            model(torch.zeros(1, 3, imgsz, imgsz).to(device).type_as(next(model.parameters())))  # run once
+            model(torch.zeros(1, 4, imgsz, imgsz).to(device).type_as(next(model.parameters())))  # run once
         task = task if task in ('train', 'val', 'test') else 'val'  # path to train/val/test images
         dataloader = create_dataloader(data[task], imgsz, batch_size, gs, single_cls, pad=0.5, rect=True,
                                        prefix=colorstr(f'{task}: '))[0]
@@ -245,7 +245,7 @@ def test(data,
     # Print speeds
     t = tuple(x / seen * 1E3 for x in (t0, t1, t2))  # speeds per image
     if not training:
-        shape = (batch_size, 3, imgsz, imgsz)
+        shape = (batch_size, 4, imgsz, imgsz)
         print(f'Speed: %.1fms pre-process, %.1fms inference, %.1fms NMS per image at shape {shape}' % t)
 
     # Plots
