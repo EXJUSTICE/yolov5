@@ -28,18 +28,18 @@ class Colors:
     # Ultralytics color palette https://ultralytics.com/
     def __init__(self):
         # hex = matplotlib.colors.TABLEAU_COLORS.values()
-        hex = ('FF3838', 'FF9D97', 'FF701F', 'FFB21D', 'CFD231', '48F90A', '92CC17', '3DDB86', '1A9334', '00D4BB',
-               '2C99A8', '00C2FF', '344593', '6473FF', '0018EC', '8438FF', '520085', 'CB38FF', 'FF95C8', 'FF37C7')
+        hex = ('FF3838FF', 'FF9D97FF', 'FF701FFF', 'FFB21DFF', 'CFD231FF', '48F90AFF', '92CC17FF', '3DDB86FF', '1A9334FF', '00D4BBFF',
+               '2C99A8FF', '00C2FFFF', '344593FF', '6473FFFF', '0018ECFF', '8438FFFF', '520085FF', 'CB38FFFF', 'FF95C8FF', 'FF37C7FF')
         self.palette = [self.hex2rgb('#' + c) for c in hex]
         self.n = len(self.palette)
 
     def __call__(self, i, bgr=False):
         c = self.palette[int(i) % self.n]
-        return (c[2], c[1], c[0]) if bgr else c
+        return (c[2], c[1], c[0], c[3]) if bgr else c
 
     @staticmethod
     def hex2rgb(h):  # rgb order (PIL)
-        return tuple(int(h[1 + i:1 + i + 2], 16) for i in (0, 2, 4))
+        return tuple(int(h[1 + i:1 + i + 2], 16) for i in (0, 2, 4, 6))
 
 
 colors = Colors()  # create instance for 'from utils.plots import colors'
@@ -91,7 +91,7 @@ def plot_one_box_PIL(box, im, color=(128, 128, 128), label=None, line_thickness=
         font = ImageFont.truetype("Arial.ttf", size=max(round(max(im.size) / 40), 12))
         txt_width, txt_height = font.getsize(label)
         draw.rectangle([box[0], box[1] - txt_height + 4, box[0] + txt_width, box[1]], fill=color)
-        draw.text((box[0], box[1] - txt_height + 1), label, fill=(255, 255, 255), font=font)
+        draw.text((box[0], box[1] - txt_height + 1), label, fill=(255, 255, 25, 255), font=font)
     return np.asarray(im)
 
 
@@ -188,11 +188,11 @@ def plot_images(images, targets, paths=None, fname='images.png', names=None, max
         if paths:
             label = Path(paths[i]).name[:40]  # trim to 40 char
             t_size = cv2.getTextSize(label, 0, fontScale=tl / 3, thickness=tf)[0]
-            cv2.putText(mosaic, label, (block_x + 5, block_y + t_size[1] + 5), 0, tl / 3, [220, 220, 220], thickness=tf,
+            cv2.putText(mosaic, label, (block_x + 5, block_y + t_size[1] + 5), 0, tl / 3, [220, 220, 220, 255], thickness=tf,
                         lineType=cv2.LINE_AA)
 
         # Image border
-        cv2.rectangle(mosaic, (block_x, block_y), (block_x + w, block_y + h), (255, 255, 255), thickness=3)
+        cv2.rectangle(mosaic, (block_x, block_y), (block_x + w, block_y + h), (255, 255, 255, 255), thickness=3)
 
     if fname:
         r = min(1280. / max(h, w) / ns, 1.0)  # ratio to limit image size
