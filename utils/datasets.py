@@ -183,7 +183,7 @@ class LoadImages:  # for inference
         else:
             # Read image
             self.count += 1
-            img0 = cv2.imread(path)  # BGR
+            img0 = cv2.imread(path, cv2.IMREAD_UNCHANGED)  # BGR
             assert img0 is not None, 'Image Not Found ' + path
             print(f'image {self.count}/{self.nf} {path}: ', end='')
 
@@ -538,6 +538,12 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
 
             # Augment colorspace
             augment_hsv(img, hgain=hyp['hsv_h'], sgain=hyp['hsv_s'], vgain=hyp['hsv_v'])
+            
+            # Augment 4th channel - contrast factor from 0.75 to 1.25
+            if img.shape[2] == 4:
+                if random.random() > 0.5:
+                    aug_f = 0.75 + (random.random() * 0.5) # 0.75 - 1.25
+                    img[:,:,3] = np.clip(img[:,:,3].copy().astype(np.float32) * aug_f, 0, 255).astype(img.dtype)
 
             # Apply cutouts
             # if random.random() < 0.9:
